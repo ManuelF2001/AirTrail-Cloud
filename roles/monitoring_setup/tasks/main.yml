@@ -1,0 +1,18 @@
+---
+
+- name: Enable GKE monitoring and logging
+  command: >
+    gcloud container clusters update ascn-cluster
+    --logging=SYSTEM,WORKLOAD
+    --monitoring=SYSTEM,STORAGE,POD
+    --zone={{ gcp_zone }}
+    --project={{ gcp_project}}
+  register: monitoring_result
+  changed_when: "'Updated' in monitoring_result.stderr"
+
+- name: Display monitoring status
+  debug:
+    msg:
+      - "Monitoring enabled successfully"
+      - "Access monitoring at: https://console.cloud.google.com/monitoring/dashboards?project={{ gcp_project }}"
+      - "View workloads at: https://console.cloud.google.com/kubernetes/workload?project={{ gcp_project }}"

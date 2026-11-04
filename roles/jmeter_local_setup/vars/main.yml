@@ -1,0 +1,5 @@
+# roles/jmeter_local_setup/vars/main.yml
+jmeter:
+  version: "5.6.3"
+  install_path_unix: "/opt/jmeter"        # Onde o JMeter vai ser instalado
+  results_dir_unix: "/home/vagrant/GrupoTP-11/results/" # Onde os relatórios vão aparecer

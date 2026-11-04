@@ -1,0 +1,17 @@
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: airtrail-service
+  labels:
+    app: airtrail-app
+    tier: webserver
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: airtrail-app
+  ports:
+    - targetPort: {{ airtrail_port }}
+      port: {{ airtrail_port }}

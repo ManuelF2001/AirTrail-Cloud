@@ -1,0 +1,31 @@
+> sudo apt-get update
+
+# install git
+
+
+# install node
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+> \. "$HOME/.nvm/nvm.sh"
+> nvm install 22
+
+# install bun
+> sudo apt install -y unzip
+> curl -fsSL https://bun.com/install | bash
+
+# install postgres locally
+> sudo apt install -y postgresql
+> sudo apt install postgresql postgresql-contrib
+
+# reload 
+> source ~/.bashrc
+
+# run postgres
+> sudo systemctl start postgresql
+> sudo systemctl enable postgresql
+
+
+# create user and database
+> sudo -u postgres psql -c "CREATE USER airtrail WITH PASSWORD 'postgres';"
+> sudo -u postgres psql -c "CREATE DATABASE airtrail OWNER airtrail;"
+
+

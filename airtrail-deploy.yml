@@ -1,0 +1,20 @@
+---
+# Playbook to deploy Airtrail and its components
+# TODO
+
+- name: Execute airtrail-db deploy tasks
+  hosts: localhost
+  gather_facts: false
+  roles: 
+    - airtrail-db
+  tags:
+    - airtrail-db
+
+
+- name: Execute airtrail-app deploy tasks
+  hosts: localhost
+  gather_facts: false
+  roles: 
+    - airtrail-app
+  tags:
+    - airtrail-app

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: airtrail-db-service
+  labels:
+    app: airtrail-db
+    tier: database
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: airtrail-db
+  ports:
+    - targetPort: 5432 # default postgres
+      port: 5432 # default postgres

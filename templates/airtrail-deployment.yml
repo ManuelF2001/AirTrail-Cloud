@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airtrail-deployment
+  namespace: default
+  labels:
+    app: airtrail-app
+    tier: webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airtrail-app
+      tier: webserver
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: airtrail-app
+        tier: webserver
+    spec:
+      containers:
+      - name: airtrail
+        image:  "{{ airtrail_image }}"
+        ports:
+        - containerPort: {{ airtrail_port }}
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: {{ airtrail_port }}
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: {{ airtrail_port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        env:
+        - name: DB_URL
+          value: "{{ db_url }}"
+        - name: DB_DATABASE_NAME
+          value: "{{ db_name }}"
+        - name: DB_USERNAME
+          value: "{{ db_user }}"
+        - name: DB_PASSWORD
+          value: "{{ db_password }}"

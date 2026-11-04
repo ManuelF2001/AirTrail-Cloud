@@ -1,0 +1,77 @@
+---
+
+- name: Deploy Airtrail Deployment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/airtrail-deployment.yml')}}"
+
+
+- name: Deploy Airtrail Service
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/airtrail-service.yml')}}"
+
+- name: Deploy Airtrail HPA
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/airtrail-hpa.yml')}}"
+  tags:
+    - hpa
+
+- name: Wait for airtrail service to get an external IP
+  kubernetes.core.k8s_info:
+    kind: Service
+    name: airtrail-service
+    namespace: default
+  register: airtrail_service_state
+  until: airtrail_service_state.resources[0].status.loadBalancer.ingress is defined
+  retries: 30
+  delay: 10
+
+- name: Get airtrail service IP and port
+  kubernetes.core.k8s_info:
+    kind: Service
+    name: airtrail-service
+    namespace: default
+  register: airtrail_service
+
+- name: Add airtrail endpoint to inventory
+  add_host:
+    name: "airtrail_endpoint"
+    ansible_host: "{{ airtrail_service.resources[0].status.loadBalancer.ingress[0].ip }}"
+    ansible_port: "{{ airtrail_service.resources[0].spec.ports[0].port }}"
+  changed_when: false
+
+- name: Set app_ip and app_port facts
+  set_fact:
+    app_ip: "{{ airtrail_service.resources[0].status.loadBalancer.ingress[0].ip }}"
+    app_port: "{{ airtrail_service.resources[0].spec.ports[0].port }}"
+  changed_when: false
+
+- name: Update app_ip in inventory
+  ansible.builtin.lineinfile:
+    path: inventory/gcp.yml
+    regexp: '^(\s*)app_ip:.*$'
+    line: '\1app_ip: {{ app_ip }}'
+    backrefs: true
+
+- name: Update app_port in inventory
+  ansible.builtin.lineinfile:
+    path: inventory/gcp.yml
+    regexp: '^(\s*)app_port:.*$'
+    line: '\1app_port: {{ app_port }}'
+    backrefs: true
+
+- name: Wait for Airtrail deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: airtrail-deployment
+    namespace: default
+  register: airtrail_deployment_state
+  until: airtrail_deployment_state.resources[0].status.readyReplicas is defined and airtrail_deployment_state.resources[0].status.readyReplicas >= 1
+  retries: 30
+  delay: 10
+
+- name: Add a 30 second pause to allow the application to fully start
+  ansible.builtin.pause:
+    seconds: 30

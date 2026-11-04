@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airtrail-db-deployment
+  namespace: default
+  labels:
+    app: airtrail-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airtrail-db
+  template:
+    metadata:
+      labels:
+        app: airtrail-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+          - containerPort: 5432
+        env:
+          - name: POSTGRES_USER
+            value: "airtrail"
+          - name: POSTGRES_PASSWORD
+            value: "mysecretpassword"
+          - name: POSTGRES_DB
+            value: "airtrail_db"
+        volumeMounts:
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data
+            subPath: postgres
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: airtrail-db-pvc

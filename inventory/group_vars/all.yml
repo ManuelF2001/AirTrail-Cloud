@@ -1,0 +1,7 @@
+---
+airtrail_image: johly/airtrail:latest
+airtrail_port: 3000
+db_url: postgresql://airtrail:mysecretpassword@airtrail-db-service:5432/airtrail_db
+db_name: airtrail_db
+db_user: airtrail
+db_password: mysecretpassword

@@ -1,0 +1,49 @@
+# --- 1. DEFINIÇÃO DE VARIÁVEIS DIRETAS ---
+- name: Set Linux facts
+  set_fact:
+    install_path: "{{ jmeter.install_path_unix }}"
+    results_dir: "{{ jmeter.results_dir_unix }}"
+    jmeter_archive: "apache-jmeter-{{ jmeter.version }}.tgz"
+
+# --- 2. INSTALAÇÃO E CONFIGURAÇÃO (LINUX) ---
+- name: Linux Installation Block
+  become: yes  # Executa como sudo para instalar pacotes e criar pastas
+  block:
+    - name: Check Java installation
+      command: java -version
+      register: java_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Install Java (OpenJDK 11)
+      apt:
+        name: openjdk-11-jdk
+        state: present
+        update_cache: yes
+      when: java_check.rc != 0
+
+    - name: Check if JMeter exists
+      stat:
+        path: "{{ install_path }}/apache-jmeter-{{ jmeter.version }}/bin/jmeter"
+      register: jmeter_bin
+
+    - name: Create JMeter directory
+      file:
+        path: "{{ install_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Download and Extract JMeter
+      unarchive:
+        src: "https://dlcdn.apache.org/jmeter/binaries/{{ jmeter_archive }}"
+        dest: "{{ install_path }}"
+        remote_src: yes
+      when: not jmeter_bin.stat.exists
+
+# --- 3. TAREFAS FINAIS ---
+- name: Create results directory
+  become: yes
+  file:
+    path: "{{ results_dir }}"
+    state: directory
+    mode: '0777'  # Permissão total para o JMeter escrever os logs e relatórios

@@ -1,0 +1,85 @@
+---
+- name: Run automated benchmark on AirTrail
+  hosts: localhost
+  gather_facts: yes
+
+  vars:
+    # Definimos o cenário que queremos correr (pode ser alterado para 'light')
+    benchmark_scenario: "heavy" 
+    scenario: "{{ benchmark_scenario }}"
+    results_dir: "/home/vagrant/GrupoTP-11/results"
+
+  tasks:
+    - name: Include variables from gcp.yml
+      include_vars:
+        # Caminho para o ficheiro de variáveis do GCP
+        file: inventory/gcp.yml
+        name: gcp_data
+
+    - name: Set facts from nested structure
+      set_fact:
+        # Extrai os dados do dicionário carregado do gcp.yml
+        # Nota: Ajusta os nomes abaixo se no teu gcp.yml forem diferentes
+        app_ip: "{{ gcp_data.all.vars.app_ip }}"
+        app_port: "{{ gcp_data.all.vars.app_port | default(3000) }}"
+        scenarios_list: ["login_test", "search_flights", "mixed_load"]
+        # Vai buscar os valores de threads/duration configurados para este cenário
+        num_threads: "{{ gcp_data.all.vars.benchmark_scenarios[scenario].threads }}"
+        duration_time: "{{ gcp_data.all.vars.benchmark_scenarios[scenario].duration }}"
+        ramp_time: "{{ gcp_data.all.vars.benchmark_scenarios[scenario].ramp_time }}"
+
+    - name: Verify AirTrail is accessible
+      uri:
+        url: "http://{{ app_ip }}:{{ app_port }}"
+        method: GET
+        status_code: [200, 301, 302]
+        timeout: 10
+      register: health_check
+      retries: 3
+      delay: 5
+
+      
+
+    - name: Create results directory
+      become: yes
+      file:
+        path: "{{ results_dir }}/heavy"
+        state: directory
+        mode: '0777'
+
+    - name: Map app_ip/app_port to legacy template variables
+      set_fact:
+        airtrail_host: "{{ app_ip }}"
+        airtrail_port: "{{ app_port }}"
+
+    - name: Generate JMeter test plans
+      template:
+        # Aqui usamos o {{ item }} para ele ir buscar o ficheiro certo na pasta
+        src: "roles/test_airtrail/templates/jmeter/{{ item }}.jmx.j2"
+        dest: "{{ item }}.jmx"
+      loop:
+        - login_test
+        - search_flights
+        - mixed_load
+
+        
+    - name: Run JMeter Tests
+      shell: |
+        # Garante que a pasta existe e está limpa
+        mkdir -p "{{ results_dir }}/heavy"
+        rm -f "{{ results_dir }}/heavy/{{ item }}_report.jtl"
+        
+        # Executa o JMeter usando as variáveis do gcp.yml
+        /opt/jmeter/apache-jmeter-5.6.3/bin/jmeter -n -t {{ item }}.jmx \
+          -l "{{ results_dir }}/heavy/{{ item }}_report.jtl" \
+          -JHOST={{ app_ip }} \
+          -JPORT={{ app_port }} \
+          -Jthreads={{ num_threads }} \
+          -Jduration={{ duration_time }} \
+          -Jramp_time={{ ramp_time }}
+      loop: "{{ scenarios_list }}"
+      register: jmeter_results
+
+    - name: Display Summary
+      debug:
+        msg: "Testes concluídos no IP {{ app_ip }}. Resultados em {{ results_dir }}/heavy/"

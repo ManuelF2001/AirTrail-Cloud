@@ -1,0 +1,28 @@
+---
+- name: Setup monitoring for AirTrail on GKE
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Include GCP variables
+      include_vars: inventory/gcp.yml
+
+    - name: Setup monitoring
+      include_role:
+        name: monitoring_setup
+
+    - name: Success message
+      debug:
+        msg: 
+          - "=========================================="
+          - "Monitoring configured successfully!"
+          - "=========================================="
+          - ""
+          - "Access monitoring at:"
+          - "  https://console.cloud.google.com/monitoring"
+          - ""
+          - "View GKE workloads at:"
+          - "  https://console.cloud.google.com/kubernetes/workload"
+          - ""
+          - "=========================================="

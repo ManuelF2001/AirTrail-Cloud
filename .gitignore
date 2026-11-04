@@ -1,0 +1,9 @@
+id_rsa
+id_rsa.pub
+.vagrant
+.env
+venv
+
+chave.json.idea/
+*Zone.Identifier
+results/
